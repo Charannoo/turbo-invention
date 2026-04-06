@@ -29,9 +29,9 @@ from typing import List, Optional
 from openai import OpenAI
 
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_TOKEN")
+API_BASE_URL = os.getenv("API_BASE_URL")
+MODEL_NAME = os.getenv("MODEL_NAME")
+HF_TOKEN = os.getenv("HF_TOKEN")
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:7860")
 
 MAX_STEPS = 8
@@ -68,22 +68,16 @@ SYSTEM_PROMPT = textwrap.dedent(
 ).strip()
 
 
-def log_start(task: str, env: str, model: str) -> None:
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+def log_start(task, env, model):
+    print(f"[START] Task: {task} | Env: {env} | Model: {model}", flush=True)
 
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    error_val = error if error else "null"
-    done_val = str(done).lower()
-    print(
-        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
-        flush=True,
-    )
+def log_step(step, action, reward, done, error):
+    print(f"[STEP] Step: {step} | Action: {action} | Reward: {reward} | Done: {done} | Error: {error}", flush=True)
 
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+def log_end(success, steps, score, rewards):
+    print(f"[END] Success: {success} | Steps: {steps} | Score: {score} | Rewards: {rewards}", flush=True)
 
 
 def reset_env(task: str) -> dict:
@@ -200,11 +194,14 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
             history.append({"role": "assistant", "content": response_text})
 
             action_str = response_text[:60] + "..." if len(response_text) > 60 else response_text
+            action_log_str = action_str.replace('\n', ' ').replace('\r', '')
 
             try:
                 result = step_env(response_text)
                 
                 reward_data = result.get("reward", {})
+                if not reward_data:
+                    print(f"[DEBUG] No reward in response: {result}", flush=True)
                 if isinstance(reward_data, dict):
                     reward = reward_data.get("value", 0.0)
                 else:
@@ -214,7 +211,7 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
                 obs_data = result.get("observation", {})
                 
             except Exception as exc:
-                error_msg = str(exc)
+                error_msg = str(exc).replace('\n', ' ').replace('\r', '')
                 reward = 0.0
                 done = True
                 obs_data = {}
@@ -222,19 +219,18 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
             rewards.append(reward)
             steps_taken = step
 
-            log_step(step=step, action=action_str, reward=reward, done=done, error=error_msg)
+            log_step(step=step, action=action_log_str, reward=reward, done=done, error=error_msg)
 
             if done:
                 break
 
-        max_reward = MAX_STEPS * 1.0
-        score = sum(rewards) / max_reward if max_reward > 0 else 0.0
+        score = max(rewards) if rewards else 0.0
         score = min(max(score, 0.0), 1.0)
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as exc:
-        error_msg = str(exc)
-        print(f"[DEBUG] Task execution error: {exc}", flush=True)
+        error_msg = str(exc).replace('\n', ' ').replace('\r', '')
+        print(f"[DEBUG] Task execution error: {error_msg}", flush=True)
     finally:
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
@@ -261,11 +257,18 @@ def main():
         print("ERROR: HF_TOKEN not set")
         return
 
+    if not API_BASE_URL:
+        print("ERROR: API_BASE_URL not set")
+        return
+
+    if not MODEL_NAME:
+        print("ERROR: MODEL_NAME not set")
+        return
+
     try:
         client = OpenAI(
             base_url=API_BASE_URL,
             api_key=HF_TOKEN,
-            http_client=None,
         )
     except Exception as e:
         print(f"ERROR: Failed to create client: {e}")

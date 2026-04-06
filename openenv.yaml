@@ -12,18 +12,40 @@ tasks:
     name: Clause Existence Check
     difficulty: easy
     description: Verify if mandatory GDPR clauses are present in the privacy policy
+    max_steps: 8
+    reward_range: [0.0, 1.0]
 
   - id: medium_purpose_mapping
     name: Purpose Mapping
     difficulty: medium
     description: Match data collection points to their stated purposes and identify mismatches
+    max_steps: 8
+    reward_range: [0.0, 1.0]
 
   - id: hard_dark_patterns
     name: Dark Pattern Detection
     difficulty: hard
     description: Identify contradictions and dark patterns between stated policies and actual practices
+    max_steps: 8
+    reward_range: [0.0, 1.0]
 
   - id: elite_multi_doc_reasoning
     name: Multi-Document Reasoning
     difficulty: elite
     description: Find contradictions requiring cross-document reasoning across 3 different documents
+    max_steps: 8
+    reward_range: [0.0, 1.0]
+
+observation_space:
+  task_id: string
+  task_name: string
+  difficulty: string
+  step: integer
+  documents: array
+  data_practices: array
+  compliance_requirements: array
+  flagged_issues: array
+  echoed_message: string
+
+action_space:
+  message: string
