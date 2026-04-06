@@ -166,6 +166,13 @@ docker run -p 7860:7860 gdpr-auditor
 
 ## Environment Variables
 
+Copy `.env.example` to `.env` and add your Hugging Face token:
+
+```bash
+cp .env.example .env
+# Then edit .env with your HF_TOKEN
+```
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `API_BASE_URL` | LLM API endpoint | `https://router.huggingface.co/v1` |

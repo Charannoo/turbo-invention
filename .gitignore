@@ -1,5 +1,7 @@
 # Environment variables (secrets)
 .env
+# But allow .env.example for sharing template
+!.env.example
 .env.*
 
 # Python
