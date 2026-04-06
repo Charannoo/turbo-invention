@@ -2,9 +2,10 @@ import sys
 sys.path.insert(0, '.')
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from typing import Optional
 from env.core import GDPRAuditorEnvironment
 from models import Action as ActionModel
 
@@ -215,6 +216,10 @@ class ActionRequest(BaseModel):
     message: str
 
 
+class ResetRequest(BaseModel):
+    task: Optional[str] = "easy"
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
@@ -222,8 +227,23 @@ async def health():
 
 
 @app.get("/reset")
-async def reset(task: str = "easy"):
-    """Reset the environment for a given task."""
+async def reset_get(task: str = "easy"):
+    """Reset the environment for a given task (GET)."""
+    try:
+        obs = env.reset(task_id=task)
+        return {"observation": obs.model_dump(), "done": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/reset")
+async def reset_post(request: Request):
+    """Reset the environment for a given task (POST)."""
+    try:
+        body = await request.json()
+        task = body.get("task", "easy") if body else "easy"
+    except Exception:
+        task = "easy"
     try:
         obs = env.reset(task_id=task)
         return {"observation": obs.model_dump(), "done": False}
