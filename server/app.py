@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, '.')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
@@ -274,9 +275,9 @@ async def state():
     return env.state()
 
 
-def start():
-    uvicorn.run("main:app", host="0.0.0.0", port=7860)
+def main():
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860)
 
 
 if __name__ == "__main__":
-    start()
+    main()

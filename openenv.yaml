@@ -2,7 +2,7 @@ name: gdpr_auditor_env
 version: 1.0.0
 description: GDPR Compliance Auditor - Detect privacy policy violations and dark patterns
 runtime: fastapi
-app: main:app
+app: server.app:app
 port: 7860
 spec_version: "1"
 type: space
