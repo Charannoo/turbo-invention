@@ -49,3 +49,9 @@ observation_space:
 
 action_space:
   message: string
+
+reward_space:
+  value: float
+  reason: string
+  issues_found: integer
+  total_issues: integer

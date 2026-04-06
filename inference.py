@@ -25,14 +25,26 @@ import re
 import textwrap
 import requests
 from typing import List, Optional
+from dotenv import load_dotenv
+load_dotenv()
 
 from openai import OpenAI
 
+# Force reload from .env file to override system env vars
+import os
+_env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(_env_file):
+    with open(_env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and '=' in line and not line.startswith('#'):
+                key, val = line.split('=', 1)
+                os.environ[key] = val
 
-API_BASE_URL = os.getenv("API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME")
-HF_TOKEN = os.getenv("HF_TOKEN")
-SERVER_URL = os.getenv("SERVER_URL", "http://localhost:7860")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+HF_TOKEN = os.environ.get("HF_TOKEN")
+SERVER_URL = os.environ.get("SERVER_URL", "http://localhost:7860")
 
 MAX_STEPS = 8
 MAX_TOKENS = 512
