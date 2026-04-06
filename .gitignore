@@ -34,7 +34,6 @@ Thumbs.db
 .DS_Store
 
 # UV
-uv.lock
 
 # Inference results (regenerated)
 inference_results.json

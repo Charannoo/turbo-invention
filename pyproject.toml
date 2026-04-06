@@ -10,10 +10,14 @@ dependencies = [
     "requests",
     "openai",
     "python-dotenv",
+    "openenv-core>=0.2.0",
 ]
 
 [project.optional-dependencies]
 dev = []
+
+[project.scripts]
+server = "main:start"
 
 [tool.uv]
 dev-dependencies = []
