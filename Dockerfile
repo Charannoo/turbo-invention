@@ -1,19 +1,38 @@
-FROM python:3.11-slim
+# GDPR Auditor Environment Dockerfile
+
+ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest
+FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    curl \
+COPY . /app
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-install-project --no-editable
 
-COPY code_review_env/ ./code_review_env/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-editable
 
+FROM ${BASE_IMAGE}
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app /app
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app:/app/env:$PYTHONPATH"
 ENV PORT=7860
-ENV HOST=0.0.0.0
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')" || exit 1
 
 EXPOSE 7860
 
-CMD ["python", "-m", "uvicorn", "code_review_env.server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["python", "main.py"]

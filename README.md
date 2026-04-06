@@ -1,319 +1,180 @@
-# Code Review Environment for OpenEnv
+---
+title: GDPR Auditor
+emoji: 📋
+colorFrom: purple
+colorTo: red
+sdk: docker
+app_port: 7860
+---
 
-A real-world code review environment where AI agents analyze code snippets, identify bugs, security vulnerabilities, and provide actionable feedback.
+# 🔒 GDPR Compliance Auditor — OpenEnv Environment
 
-## Overview
+**GDPR Auditor** is an OpenEnv-compatible RL environment where AI agents act as autonomous compliance officers, auditing privacy policies for GDPR/CCPA violations, detecting dark patterns, and identifying policy contradictions.
 
-This environment simulates a genuine software engineering task: reviewing code changes for issues. Agents must:
+---
 
-1. Analyze code snippets carefully
-2. Identify bugs, security vulnerabilities, and quality issues
-3. Provide precise location information (line numbers)
-4. Categorize issues by severity and type
-5. Suggest fixes when applicable
+## The Problem It Solves
 
-### Why Code Review?
+Every company needs compliance auditing to avoid massive fines:
+- GDPR fines up to **€20 million** or **4% of global revenue**
+- CCPA fines up to **$7,500 per violation**
+- Average human compliance auditor cost: **$100,000+/year**
 
-Code review is a critical real-world task that:
+### The Agent's Job
 
-- **Is genuinely useful** - Every software team performs code reviews
-- **Requires reasoning** - Agents must understand code semantics, not just pattern match
-- **Has clear success criteria** - Issues can be objectively verified
-- **Shows difficulty progression** - From syntax errors to subtle security vulnerabilities
+1. Review privacy policy documents (single or multi-document)
+2. Map data practices to stated purposes
+3. Identify contradictions, missing clauses, and dark patterns
+4. Report compliance violations with severity levels
 
-## Environment Description
+---
 
-### Task Overview
+## Tasks & Grading
 
-| Task ID | Name | Difficulty | Description |
-|---------|------|------------|-------------|
-| `syntax_basics` | Syntax and Basic Issues | Easy | Detect syntax errors and obvious correctness issues |
-| `logic_bugs` | Logic and Algorithmic Issues | Medium | Find logic errors, off-by-one bugs, and algorithmic flaws |
-| `security_review` | Security Vulnerability Detection | Hard | Identify critical security vulnerabilities |
-
-### Action Space
-
-The agent submits `Action` objects containing:
-
-```python
-Action(
-    comments=[
-        ReviewComment(
-            location=CodeLocation(
-                line_start=5,
-                line_end=7,
-                description="Loop condition"
-            ),
-            severity="warning",  # info, warning, error, critical
-            category="logic",     # syntax, logic, security, performance, etc.
-            message="Off-by-one error in loop condition",
-            suggestion="Change < to <="
-        )
-    ],
-    submit_review=False  # Set to True when review is complete
-)
-```
-
-### Observation Space
-
-Each step returns an `Observation` containing:
-
-- `task_id`: Current task identifier
-- `task_description`: Instructions for the current task
-- `difficulty`: Easy, medium, or hard
-- `code_snippet`: The code to review
-- `language`: Programming language (python, javascript, etc.)
-- `file_path`: Context path for the file
-- `step`: Current step number
-- `max_steps`: Maximum allowed steps
-- `cumulative_reward`: Running reward total
-- `previous_comments`: Comments submitted in prior steps
+| Task | Difficulty | Description | Hidden Issues |
+|------|------------|-------------|---------------|
+| `easy_clause_existence` | Easy | Verify mandatory GDPR clauses are present | 2 |
+| `medium_purpose_mapping` | Medium | Match practices to purposes, find mismatches | 3 |
+| `hard_dark_patterns` | Hard | Find contradictions within a single document | 5 |
+| `elite_multi_doc_reasoning` | Elite | Cross-document contradiction detection | 6 |
 
 ### Reward Function
 
-Rewards are calculated based on:
-
-1. **Precision** (50% weight): Ratio of true positives to total claimed issues
-2. **Recall** (50% weight): Ratio of issues found to total issues
-3. **Completion Bonus**: +0.5 for perfect detection with no false positives
-4. **Efficiency Bonus**: +0.1 for completing within 50% of max steps
-5. **Difficulty Bonus**: +0.0 (easy), +0.1 (medium), +0.2 (hard)
-
-**Partial Progress**: Reward signals are provided throughout the episode, not just at the end.
-
-**Penalties**:
-- -0.05 for submitting excessive comments (> max_comments)
-- -0.02 per step for no new progress after 3 consecutive steps
-
-## Setup Instructions
-
-### Local Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/code-review-env.git
-cd code-review-env
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+```
+R = base_score + severity_bonus + multi_doc_bonus + exploration_bonus
 ```
 
-### Running the Server
+- **Base Score**: `issues_found / total_issues`
+- **Severity Bonus**: +0.25 for critical findings, +0.15 for high
+- **Multi-Document Bonus**: +0.2 for elite task (cross-doc findings)
+- **Exploration Bonus**: +0.02 per step (max 0.1)
 
-```bash
-# Start the OpenEnv server
-python -m uvicorn code_review_env.server:app --host 0.0.0.0 --port 7860
+All rewards are clamped to `[0.0, 1.0]`.
 
-# Or run directly
-python code_review_env/server.py
-```
+---
 
-### Docker Deployment
+## API Endpoints
 
-```bash
-# Build the image
-docker build -t code-review-env .
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check → `{"status": "ok"}` |
+| `/reset?task=easy` | GET | Reset environment for a task |
+| `/step` | POST | Submit a finding → `{"message": "..."}` |
+| `/state` | GET | Get current episode state |
 
-# Run the container
-docker run -p 7860:7860 code-review-env
-```
-
-### Hugging Face Space Deployment
-
-1. Create a new Space at https://huggingface.co/new-space
-2. Select "Docker" as the SDK
-3. Copy your files to the Space
-4. The Space will automatically build and run
-
-## Usage Examples
-
-### Python API
-
-```python
-from code_review_env import CodeReviewEnv, Action, ReviewComment, CodeLocation
-
-# Create environment
-env = CodeReviewEnv()
-
-# Reset and get initial observation
-result = env.reset(task_id="syntax_basics")
-observation = result.observation
-
-print(f"Code to review:\n{observation.code_snippet}")
-
-# Submit review comments
-action = Action(
-    comments=[
-        ReviewComment(
-            location=CodeLocation(line_start=4, line_end=4),
-            severity="error",
-            category="syntax",
-            message="Missing colon after for loop",
-            suggestion="Add ':' after 'for num in numbers'"
-        )
-    ],
-    submit_review=True
-)
-
-# Step through environment
-result = env.step(action)
-print(f"Reward: {result.reward.value}")
-print(f"Done: {result.done}")
-print(f"Message: {result.reward.message}")
-
-env.close()
-```
-
-### REST API
+### Example Usage
 
 ```bash
 # Reset environment
-curl -X POST http://localhost:7860/reset \
-  -H "Content-Type: application/json" \
-  -d '{"task_id": "syntax_basics"}'
+curl "http://localhost:7860/reset?task=easy"
 
-# Take a step
-curl -X POST http://localhost:7860/step \
+# Submit a compliance finding
+curl -X POST "http://localhost:7860/step" \
   -H "Content-Type: application/json" \
-  -d '{
-    "session_id": "your-session-id",
-    "action": {
-      "comments": [...],
-      "submit_review": false
-    }
-  }'
+  -d '{"message": "Missing Right to be Forgotten clause"}'
 
 # Get current state
-curl "http://localhost:7860/state?session_id=your-session-id"
-
-# List available tasks
-curl http://localhost:7860/tasks
+curl "http://localhost:7860/state"
 ```
 
-## Baseline Scores
+---
 
-Running `inference.py` with the default model produces these baseline scores:
+## Action / Observation Spaces
 
-| Task | Difficulty | Expected Score |
-|------|-----------|----------------|
-| syntax_basics | Easy | 0.75 - 0.85 |
-| logic_bugs | Medium | 0.55 - 0.70 |
-| security_review | Hard | 0.40 - 0.60 |
+### Observation (returned by reset/step)
+```json
+{
+  "task_id": "easy_clause_existence",
+  "task_name": "Clause Existence Check",
+  "difficulty": "easy",
+  "step": 0,
+  "documents": [{"id": "...", "title": "...", "content": "...", "doc_type": "policy"}],
+  "data_practices": [{"id": "...", "category": "...", "purpose": "...", "data_type": "...", "shared_with_third_parties": false}],
+  "compliance_requirements": ["Right to be Forgotten", "Data Portability", "Contact Information"],
+  "flagged_issues": [],
+  "echoed_message": "Review the privacy policy..."
+}
+```
 
-**Average Baseline**: ~0.60
+### Action (sent to /step)
+```json
+{"message": "Missing Right to be Forgotten clause"}
+```
 
-To reproduce:
+### Reward (returned from /step)
+```json
+{
+  "value": 0.52,
+  "reason": "Found 1/2 issues",
+  "issues_found": 1,
+  "total_issues": 2
+}
+```
 
+---
+
+## Setup & Local Development
+
+### Prerequisites
+- Python 3.10+
+- `uv` or `pip`
+
+### Install & Run
+```bash
+# Install dependencies
+pip install -e .
+
+# Start the server
+python main.py
+# → Server at http://localhost:7860
+```
+
+### Run Inference
 ```bash
 export API_BASE_URL="https://router.huggingface.co/v1"
-export MODEL_NAME="meta-llama/Llama-3.2-3B-Instruct"
-export HF_TOKEN="hf_your_token_here"
+export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
+export HF_TOKEN="your-token-here"
+export SERVER_URL="http://localhost:7860"
+
 python inference.py
 ```
 
-## Running the Inference Script
-
-The `inference.py` script runs a language model against all tasks:
-
+### Docker
 ```bash
-# Set environment variables
-export API_BASE_URL="https://router.huggingface.co/v1"
-export MODEL_NAME="your-model-name"
-export HF_TOKEN="your-api-key"
-
-# Run inference
-python inference.py
+docker build -t gdpr-auditor .
+docker run -p 7860:7860 gdpr-auditor
 ```
 
-Results are saved to `inference_results.json`.
-
-## Grading System
-
-Each task has predefined issues that agents must identify. The grader evaluates:
-
-- **True Positives**: Correctly identified issues
-- **False Positives**: Incorrectly flagged issues
-- **Missed Issues**: Issues the agent failed to find
-
-```python
-score = 0.5 * precision + 0.5 * recall
-
-# Bonuses
-if perfect_detection:
-    score += 0.5
-elif good_detection_no_fp:
-    score += 0.25
-
-# Final score capped at 1.0
-score = min(1.0, score + difficulty_bonus)
-```
-
-## API Reference
-
-### Methods
-
-#### `reset(task_id=None, seed=None) -> StepResult`
-Reset the environment to initial state. Returns initial observation.
-
-#### `step(action: Action) -> StepResult`
-Execute one step with the given action. Returns observation, reward, done flag, and info.
-
-#### `state() -> dict`
-Return current environment state.
-
-### Models
-
-#### `Observation`
-- `task_id`: str
-- `task_name`: str
-- `task_description`: str
-- `difficulty`: Literal["easy", "medium", "hard"]
-- `code_snippet`: str
-- `language`: str
-- `file_path`: str
-- `step`: int
-- `max_steps`: int
-- `cumulative_reward`: float
-- `previous_comments`: List[ReviewComment]
-
-#### `Action`
-- `comments`: List[ReviewComment]
-- `submit_review`: bool
-
-#### `Reward`
-- `value`: float (0.0 - 1.0)
-- `partial_scores`: dict
-- `issues_found`: List[str]
-- `false_positives`: int
-- `message`: str
+---
 
 ## Project Structure
 
 ```
-code_review_env/
-├── __init__.py           # Package init
-├── models.py             # Pydantic models (Observation, Action, Reward)
-├── environment.py        # Core environment implementation
-├── server.py             # FastAPI server for REST API
-├── tasks/
+├── models.py          # Pydantic typed models (Observation, Action, Reward)
+├── env/
 │   ├── __init__.py
-│   └── definitions.py    # Task definitions and graders
-├── openenv.yaml          # OpenEnv specification
-└── README.md             # This file
-
-inference.py              # Baseline inference script
-Dockerfile                # Container build file
-requirements.txt          # Python dependencies
+│   └── core.py        # GDPRAuditorEnvironment with 4 tasks + graders
+├── main.py            # FastAPI server with all endpoints
+├── inference.py       # Baseline inference script (OpenAI client)
+├── openenv.yaml       # OpenEnv manifest with task definitions
+├── pyproject.toml     # Dependencies
+├── Dockerfile         # Container configuration
+└── README.md          # This file
 ```
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `API_BASE_URL` | LLM API endpoint | `https://router.huggingface.co/v1` |
+| `MODEL_NAME` | Model identifier | `Qwen/Qwen2.5-72B-Instruct` |
+| `HF_TOKEN` | Hugging Face / API key | (required) |
+| `SERVER_URL` | Environment server URL | `http://localhost:7860` |
+
+---
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Contributing
-
-Contributions welcome! Please read our contributing guidelines before submitting PRs.
+MIT

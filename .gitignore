@@ -1,0 +1,34 @@
+# Environment variables (secrets)
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+# ENV/ (Removed as it matches env/ on Windows)
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# UV
+uv.lock
+
+# Inference results (regenerated)
+inference_results.json

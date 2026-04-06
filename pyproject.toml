@@ -1,0 +1,18 @@
+[project]
+name = "gdpr_auditor_env"
+version = "1.0.0"
+description = "GDPR Compliance Auditor - Detect privacy policy violations"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "requests",
+    "openai",
+]
+
+[project.optional-dependencies]
+dev = []
+
+[tool.uv]
+dev-dependencies = []

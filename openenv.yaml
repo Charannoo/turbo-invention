@@ -1,0 +1,29 @@
+name: gdpr_auditor_env
+version: 1.0.0
+description: GDPR Compliance Auditor - Detect privacy policy violations and dark patterns
+runtime: fastapi
+app: main:app
+port: 7860
+spec_version: "1"
+type: space
+
+tasks:
+  - id: easy_clause_existence
+    name: Clause Existence Check
+    difficulty: easy
+    description: Verify if mandatory GDPR clauses are present in the privacy policy
+
+  - id: medium_purpose_mapping
+    name: Purpose Mapping
+    difficulty: medium
+    description: Match data collection points to their stated purposes and identify mismatches
+
+  - id: hard_dark_patterns
+    name: Dark Pattern Detection
+    difficulty: hard
+    description: Identify contradictions and dark patterns between stated policies and actual practices
+
+  - id: elite_multi_doc_reasoning
+    name: Multi-Document Reasoning
+    difficulty: elite
+    description: Find contradictions requiring cross-document reasoning across 3 different documents
