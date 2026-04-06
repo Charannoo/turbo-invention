@@ -69,15 +69,19 @@ SYSTEM_PROMPT = textwrap.dedent(
 
 
 def log_start(task, env, model):
-    print(f"[START] Task: {task} | Env: {env} | Model: {model}", flush=True)
+    print(f"[START] task={task} env={env} model={model}", flush=True)
 
 
 def log_step(step, action, reward, done, error):
-    print(f"[STEP] Step: {step} | Action: {action} | Reward: {reward} | Done: {done} | Error: {error}", flush=True)
+    done_str = str(done).lower()
+    error_str = "null" if error is None else str(error).replace('\n', ' ').replace('\r', '')
+    print(f"[STEP] step={step} action={action} reward={reward:.4f} done={done_str} error={error_str}", flush=True)
 
 
 def log_end(success, steps, score, rewards):
-    print(f"[END] Success: {success} | Steps: {steps} | Score: {score} | Rewards: {rewards}", flush=True)
+    success_str = str(success).lower()
+    rewards_str = ",".join(f"{r:.4f}" for r in rewards)
+    print(f"[END] success={success_str} steps={steps} score={score:.4f} rewards={rewards_str}", flush=True)
 
 
 def reset_env(task: str) -> dict:
