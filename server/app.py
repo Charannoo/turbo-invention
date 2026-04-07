@@ -203,14 +203,26 @@ async def api_info():
         "name": "GDPR Compliance Auditor",
         "version": "1.0.0",
         "description": "OpenEnv environment for AI-powered GDPR/CCPA compliance auditing",
-        "tasks": ["easy", "medium", "hard", "elite"],
+        "tasks": ["easy_clause_existence", "medium_purpose_mapping", "hard_dark_patterns", "elite_multi_doc_reasoning"],
         "endpoints": {
             "health": "GET /health",
-            "reset": "GET /reset?task=easy|medium|hard|elite",
+            "tasks": "GET /tasks",
+            "reset": "GET /reset?task=<task_id>  or  POST /reset {task: <task_id>}",
             "step": "POST /step {message: string}",
             "state": "GET /state",
         },
     }
+
+
+@app.get("/tasks")
+async def list_tasks():
+    """Enumerate all available tasks (as declared in openenv.yaml)."""
+    return [
+        {"id": "easy_clause_existence",    "name": "Clause Existence Check",    "difficulty": "easy",   "max_steps": 8, "reward_range": [0.0, 1.0]},
+        {"id": "medium_purpose_mapping",   "name": "Purpose Mapping",           "difficulty": "medium", "max_steps": 8, "reward_range": [0.0, 1.0]},
+        {"id": "hard_dark_patterns",       "name": "Dark Pattern Detection",     "difficulty": "hard",   "max_steps": 8, "reward_range": [0.0, 1.0]},
+        {"id": "elite_multi_doc_reasoning","name": "Multi-Document Reasoning",  "difficulty": "elite",  "max_steps": 8, "reward_range": [0.0, 1.0]},
+    ]
 
 
 class ActionRequest(BaseModel):

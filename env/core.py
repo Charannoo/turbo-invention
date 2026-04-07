@@ -232,6 +232,14 @@ class GDPRAuditorEnvironment:
         self._max_steps = max_steps
         self._ep: Optional[EpisodeState] = None
         
+    # Map full task IDs (from openenv.yaml) → short keys used in TASKS dict
+    _TASK_ID_MAP = {
+        "easy_clause_existence":    "easy",
+        "medium_purpose_mapping":   "medium",
+        "hard_dark_patterns":       "hard",
+        "elite_multi_doc_reasoning": "elite",
+    }
+
     def reset(
         self,
         seed: Optional[int] = None,
@@ -241,10 +249,12 @@ class GDPRAuditorEnvironment:
     ) -> ObsModel:
         if seed is not None:
             random.seed(seed)
-            
-        task_key = task_id or random.choice(["easy", "medium", "hard"])
+
+        # Accept both short keys ("easy") and full IDs ("easy_clause_existence")
+        raw_key = task_id or random.choice(["easy", "medium", "hard"])
+        task_key = self._TASK_ID_MAP.get(raw_key, raw_key)  # resolve full→short
         if task_key not in TASKS:
-            task_key = "easy"
+            task_key = "easy"  # safe fallback
             
         task = TASKS[task_key]
         
