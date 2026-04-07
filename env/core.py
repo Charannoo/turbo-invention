@@ -363,11 +363,16 @@ class GDPRAuditorEnvironment:
         return None
     
     def _calculate_reward(self) -> RewModel:
+        # Scores must be strictly in (0, 1) — never exactly 0.0 or 1.0
+        _EPSILON = 1e-6
+        _MIN_SCORE = _EPSILON
+        _MAX_SCORE = 1.0 - _EPSILON
+
         task = self._ep.task_config
         total_issues = len(task.hidden_issues)
         found_count = len(self._ep.found_issues)
         
-        base_score = found_count / total_issues if total_issues > 0 else 0
+        base_score = found_count / total_issues if total_issues > 0 else 0.0
         
         severity_bonus = 0.0
         critical_found = any("critical" in f.lower() for f in self._ep.found_issues)
@@ -386,7 +391,9 @@ class GDPRAuditorEnvironment:
         
         exploration_bonus = min(self._ep.steps * 0.02, 0.1)
         
-        total_reward = min(1.0, base_score + severity_bonus + multi_doc_bonus + exploration_bonus)
+        raw_reward = base_score + severity_bonus + multi_doc_bonus + exploration_bonus
+        # Clamp to strictly open interval (0, 1)
+        total_reward = max(_MIN_SCORE, min(_MAX_SCORE, raw_reward))
         
         reason = f"Found {found_count}/{total_issues} issues"
         

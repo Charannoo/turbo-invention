@@ -240,8 +240,10 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
             if done:
                 break
 
-        score = max(rewards) if rewards else 0.0
-        score = min(max(score, 0.0), 1.0)
+        _EPSILON = 1e-6
+        score = max(rewards) if rewards else _EPSILON
+        # Clamp to strictly open interval (0, 1) — validator rejects 0.0 and 1.0
+        score = max(_EPSILON, min(1.0 - _EPSILON, score))
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as exc:
