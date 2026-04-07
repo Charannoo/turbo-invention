@@ -219,7 +219,7 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
                 if not reward_data:
                     print(f"[DEBUG] No reward in response: {result}", flush=True)
                 if isinstance(reward_data, dict):
-                    reward = reward_data.get("value", 0.0)
+                    reward = reward_data.get("value", 1e-6)  # default to epsilon, not 0.0
                 else:
                     reward = float(reward_data)
                 done = result.get("done", False)
@@ -228,7 +228,7 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
                 
             except Exception as exc:
                 error_msg = str(exc).replace('\n', ' ').replace('\r', '')
-                reward = 0.0
+                reward = 1e-6  # never exactly 0.0 — validator requires strictly (0, 1)
                 done = True
                 obs_data = {}
 

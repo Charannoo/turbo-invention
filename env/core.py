@@ -287,7 +287,7 @@ class GDPRAuditorEnvironment:
         if self._ep is None:
             return (
                 self._error_obs("Environment not reset"),
-                RewModel(value=0.0, reason="Environment not initialized", issues_found=0, total_issues=0),
+                RewModel(value=1e-6, reason="Environment not initialized", issues_found=0, total_issues=0),
                 True,
                 {"error": "Environment not reset. Call /reset first."},
             )

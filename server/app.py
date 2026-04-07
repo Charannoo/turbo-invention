@@ -218,10 +218,10 @@ async def api_info():
 async def list_tasks():
     """Enumerate all available tasks (as declared in openenv.yaml)."""
     return [
-        {"id": "easy_clause_existence",    "name": "Clause Existence Check",    "difficulty": "easy",   "max_steps": 8, "reward_range": [0.0, 1.0]},
-        {"id": "medium_purpose_mapping",   "name": "Purpose Mapping",           "difficulty": "medium", "max_steps": 8, "reward_range": [0.0, 1.0]},
-        {"id": "hard_dark_patterns",       "name": "Dark Pattern Detection",     "difficulty": "hard",   "max_steps": 8, "reward_range": [0.0, 1.0]},
-        {"id": "elite_multi_doc_reasoning","name": "Multi-Document Reasoning",  "difficulty": "elite",  "max_steps": 8, "reward_range": [0.0, 1.0]},
+        {"id": "easy_clause_existence",    "name": "Clause Existence Check",    "difficulty": "easy",   "max_steps": 8, "reward_range": [0.001, 0.999]},
+        {"id": "medium_purpose_mapping",   "name": "Purpose Mapping",           "difficulty": "medium", "max_steps": 8, "reward_range": [0.001, 0.999]},
+        {"id": "hard_dark_patterns",       "name": "Dark Pattern Detection",     "difficulty": "hard",   "max_steps": 8, "reward_range": [0.001, 0.999]},
+        {"id": "elite_multi_doc_reasoning","name": "Multi-Document Reasoning",  "difficulty": "elite",  "max_steps": 8, "reward_range": [0.001, 0.999]},
     ]
 
 
