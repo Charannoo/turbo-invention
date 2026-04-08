@@ -287,7 +287,7 @@ class GDPRAuditorEnvironment:
         if self._ep is None:
             return (
                 self._error_obs("Environment not reset"),
-                RewModel(value=1e-6, reason="Environment not initialized", issues_found=0, total_issues=0),
+                RewModel(value=0.001, reason="Environment not initialized", issues_found=0, total_issues=0),
                 True,
                 {"error": "Environment not reset. Call /reset first."},
             )
@@ -373,10 +373,10 @@ class GDPRAuditorEnvironment:
         return None
     
     def _calculate_reward(self) -> RewModel:
-        # Scores must be strictly in (0, 1) — never exactly 0.0 or 1.0
-        _EPSILON = 1e-6
-        _MIN_SCORE = _EPSILON
-        _MAX_SCORE = 1.0 - _EPSILON
+        # Scores must be strictly in (0, 1) and visible in :.4f format
+        # 1e-6 formats as "0.0000" which the validator reads as 0.0 — use 0.001 minimum
+        _MIN_SCORE = 0.001
+        _MAX_SCORE = 0.999
 
         task = self._ep.task_config
         total_issues = len(task.hidden_issues)

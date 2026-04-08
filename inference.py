@@ -219,7 +219,7 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
                 if not reward_data:
                     print(f"[DEBUG] No reward in response: {result}", flush=True)
                 if isinstance(reward_data, dict):
-                    reward = reward_data.get("value", 1e-6)  # default to epsilon, not 0.0
+                    reward = reward_data.get("value", 0.001)  # default 0.001, never 0.0
                 else:
                     reward = float(reward_data)
                 done = result.get("done", False)
@@ -228,7 +228,7 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
                 
             except Exception as exc:
                 error_msg = str(exc).replace('\n', ' ').replace('\r', '')
-                reward = 1e-6  # never exactly 0.0 — validator requires strictly (0, 1)
+                reward = 0.001  # 1e-6 formats as "0.0000" — use 0.001 so :.4f gives "0.0010"
                 done = True
                 obs_data = {}
 
@@ -240,10 +240,12 @@ def run_task(client: OpenAI, task_key: str, verbose: bool = False) -> dict:
             if done:
                 break
 
-        _EPSILON = 1e-6
-        score = max(rewards) if rewards else _EPSILON
-        # Clamp to strictly open interval (0, 1) — validator rejects 0.0 and 1.0
-        score = max(_EPSILON, min(1.0 - _EPSILON, score))
+        # 1e-6 formats as "0.0000" with :.4f — validator parses that as 0.0 and fails
+        # Use 0.001 min so it formats as "0.0010", and 0.999 max so it formats as "0.9990"
+        _MIN_SCORE = 0.001
+        _MAX_SCORE = 0.999
+        score = max(rewards) if rewards else _MIN_SCORE
+        score = max(_MIN_SCORE, min(_MAX_SCORE, score))
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as exc:
